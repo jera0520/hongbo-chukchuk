@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>홍보 척척</title>
+<meta name="description" content="쓰고 있는 ChatGPT로 행사·체험·가게 홍보 이미지 5장을 만듭니다. 글과 사진은 이 브라우저 밖으로 나가지 않습니다.">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/cards.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="mast-in">
+    <p class="series">AI한술 도구 · 두 번째</p>
+    <h1>홍보 척척</h1>
+    <p class="lede">쓰고 계신 ChatGPT가 글을 쓰고, 이 페이지가 860px 홍보 이미지 5장으로 짜 드립니다.</p>
+  </div>
+  <p class="phone-note">이 도구는 컴퓨터 화면에 맞춰 만들었어요. 휴대폰에서는 미리보기만 보시고, 만들기는 컴퓨터에서 해 주세요.</p>
+</header>
+
+<main class="layout">
+  <div class="steps">
+
+    <section class="step" id="s1">
+      <h2><span class="no">①</span> 무엇을 알리나요</h2>
+      <p class="hint">짧게 적어 주세요. 모르는 칸은 비워 두면 "확정 전"으로 들어갑니다.</p>
+      <label class="fld"><span>알리는 것 <b>꼭</b></span><input id="f-what" maxlength="40" placeholder="예) 주말 도자기 원데이 클래스"></label>
+      <label class="fld"><span>하는 곳</span><input id="f-who" maxlength="30" placeholder="가게·기관 이름"></label>
+      <label class="fld"><span>날짜·장소·가격</span><input id="f-when" maxlength="60" placeholder="예) 매주 토요일 오후 2시, 2시간"></label>
+      <label class="fld"><span>누구에게</span><input id="f-whom" maxlength="40" placeholder="예) 친구·연인, 혼자 오는 분"></label>
+      <label class="fld"><span>꼭 넣을 말</span><textarea id="f-must" rows="2" maxlength="80" placeholder="한두 줄"></textarea></label>
+      <div class="accent-pick" role="radiogroup" aria-label="강조색">
+        <span class="pick-label">강조색</span>
+        <div id="accents"></div>
+      </div>
+      <div class="row-btns">
+        <button type="button" class="btn ghost" id="b-sample">예시로 해 보기</button>
+        <button type="button" class="btn ghost quiet" id="b-reset">처음부터 다시</button>
+      </div>
+    </section>
+
+    <section class="step" id="s2">
+      <h2><span class="no">②</span> 질문지를 ChatGPT에</h2>
+      <p class="hint">질문지를 복사해 ChatGPT 입력창에 붙여 넣고 보내세요.</p>
+      <div class="row-btns">
+        <button type="button" class="btn main" id="b-copy-prompt">질문지 복사</button>
+        <a class="btn ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기 ↗</a>
+      </div>
+      <p class="msg" id="m-prompt" role="status"></p>
+      <details class="peek">
+        <summary>질문지 내용 보기</summary>
+        <pre id="prompt-text"></pre>
+      </details>
+    </section>
+
+    <section class="step" id="s3">
+      <h2><span class="no">③</span> 답을 여기에 붙여 넣기</h2>
+      <p class="hint">ChatGPT 답의 회색 상자 오른쪽 위 <b>복사</b>를 누르고, 아래 칸에 붙여 넣으세요.</p>
+      <textarea id="answer" rows="7" placeholder="여기에 붙여 넣기 (Ctrl+V / ⌘+V)"></textarea>
+      <div id="check" class="check" hidden>
+        <p class="check-sum" id="check-sum"></p>
+        <table class="check-table"><tbody id="check-body"></tbody></table>
+        <button type="button" class="btn main" id="b-apply">틀에 넣기</button>
+      </div>
+      <p class="msg" id="m-answer" role="status"></p>
+    </section>
+
+    <section class="step" id="s4">
+      <h2><span class="no">④</span> 사진 넣기</h2>
+      <p class="hint">내 사진이 있으면 먼저 넣으세요. 없는 칸은 <b>AI 프롬프트 복사</b> → ChatGPT에 붙여 넣어 사진 만들기 → 내려받은 사진을 칸에 끌어다 놓기. 미리보기의 사진은 끌어서 위치를 옮길 수 있어요. 글은 이 컴퓨터에 남지만 사진은 남지 않아서, 페이지를 새로 고치면 사진만 다시 넣어야 해요.</p>
+      <div id="slots"></div>
+    </section>
+
+    <section class="step" id="s5">
+      <h2><span class="no">⑤</span> 내려받기</h2>
+      <ul class="warns" id="warns"></ul>
+      <div class="row-btns">
+        <button type="button" class="btn main" id="b-zip">낱장 5장 받기 (zip)</button>
+        <button type="button" class="btn ghost" id="b-long">긴 그림 1장 받기</button>
+      </div>
+      <p class="msg" id="m-export" role="status"></p>
+    </section>
+
+  </div>
+
+  <div class="preview-col">
+    <div class="preview-head">
+      <h2>미리보기 <span class="badge" id="sample-badge">예시</span></h2>
+      <p>글자를 눌러 바로 고칠 수 있어요. 빨간 테두리는 칸을 넘친 글자예요.</p>
+    </div>
+    <div class="preview" id="preview"></div>
+  </div>
+</main>
+
+<footer class="colophon">
+  <p>글과 사진은 이 브라우저 밖으로 나가지 않아요. 서버·로그인·결제 없음.</p>
+  <p>글꼴: <a href="fonts/pretendard/OFL-Pretendard.txt">Pretendard</a> · <a href="fonts/OFL-Hahmlet.txt">Hahmlet</a> · <a href="fonts/OFL-IBMPlexSansKR.txt">IBM Plex Sans KR</a> (SIL Open Font License) · 그림 만들기: <a href="lib/LICENSE-modern-screenshot.txt">modern-screenshot</a> (MIT)</p>
+  <p>AI한술</p>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

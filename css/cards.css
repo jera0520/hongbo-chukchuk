@@ -1,0 +1,96 @@
+/* 「깔끔·모던」 5장 — 한 장 860×1100. 내려받는 그림과 미리보기가 같은 규칙을 쓴다.
+   글꼴: Pretendard(OFL, fonts/pretendard/OFL-Pretendard.txt). 한글 2,350자 줄인 판. */
+@font-face { font-family: 'PretendardHB'; font-weight: 400; src: url(../fonts/pretendard/Pretendard-Regular.subset.woff2) format('woff2'); }
+@font-face { font-family: 'PretendardHB'; font-weight: 600; src: url(../fonts/pretendard/Pretendard-SemiBold.subset.woff2) format('woff2'); }
+@font-face { font-family: 'PretendardHB'; font-weight: 700; src: url(../fonts/pretendard/Pretendard-Bold.subset.woff2) format('woff2'); }
+
+.card {
+  --ink: #17181A;
+  --sub: #5B5F66;
+  --line: #D9DCE0;
+  --paper: #FFFFFF;
+  --mist: #EEF0F2;
+  position: relative;
+  width: 860px;
+  height: 1100px;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'PretendardHB', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-weight: 400;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+}
+.card .t { white-space: pre-line; margin: 0; outline: none; }
+.card.dark { background: var(--accent); color: #fff; --sub: rgba(255,255,255,.78); --line: rgba(255,255,255,.32); }
+.card.c3 { background: var(--mist); }
+
+/* 위 띠: 꼬리표 + 쪽 */
+.card .top {
+  position: absolute; left: 64px; right: 64px; top: 40px; height: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 18px; font-weight: 600; letter-spacing: .01em; color: var(--sub);
+}
+/* 폭을 글자에 맞춰 줄이면 그림으로 찍을 때(특히 사파리) 1~2px 모자라 잘린다 → 폭 고정 + 한 줄 */
+.card .tag { width: 560px; height: 24px; line-height: 24px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card .pno { font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 아래 안내 */
+.card .foot {
+  position: absolute; left: 64px; right: 64px; bottom: 36px; height: 22px;
+  border-top: 1px solid var(--line); padding-top: 14px; box-sizing: content-box;
+}
+.card .foot-t { font-size: 17px; line-height: 22px; color: var(--sub); max-width: 732px; overflow: hidden; }
+
+/* 큰 제목 공통 */
+.card .title { position: absolute; left: 64px; width: 732px; font-weight: 700; letter-spacing: -0.035em; overflow: visible; }
+
+/* 1장 첫인상 */
+.c1 .kicker { position: absolute; left: 64px; top: 112px; width: 732px; font-size: 24px; line-height: 32px; font-weight: 600; color: var(--accent); }
+.c1 .title { top: 156px; font-size: 84px; line-height: 94px; }
+.c1 .desc { position: absolute; left: 64px; top: 366px; width: 560px; font-size: 26px; line-height: 38px; color: var(--sub); }
+.c1 .ph { position: absolute; left: 0; top: 470px; width: 860px; height: 540px; }
+
+/* 2장 무엇을 하나 */
+.c2 .title { top: 120px; font-size: 80px; line-height: 90px; }
+.c2 .rows { position: absolute; left: 64px; right: 64px; top: 560px; }
+.c2 .row { display: grid; grid-template-columns: 180px 1fr; align-items: baseline; height: 118px; border-top: 1px solid var(--line); padding-top: 34px; box-sizing: border-box; }
+.c2 .r-name { font-size: 30px; line-height: 40px; font-weight: 600; width: 180px; overflow: hidden; }
+.c2 .r-desc { font-size: 24px; line-height: 34px; color: var(--sub); width: 552px; }
+
+/* 3장 무엇이 남나 */
+.c3 .title { top: 120px; font-size: 72px; line-height: 82px; }
+.c3 .ph { position: absolute; left: 64px; top: 330px; width: 732px; height: 560px; }
+.c3 .desc { position: absolute; left: 64px; top: 918px; width: 732px; font-size: 26px; line-height: 38px; color: var(--sub); }
+
+/* 4장 누구에게 */
+.c4 .title { top: 120px; font-size: 80px; line-height: 90px; }
+.c4 .rows { position: absolute; left: 64px; right: 64px; top: 600px; }
+.c4 .row { display: flex; flex-direction: column; gap: 10px; height: 160px; border-top: 1px solid var(--line); padding-top: 34px; box-sizing: border-box; }
+.c4 .r-name { font-size: 34px; line-height: 44px; font-weight: 600; width: 732px; }
+.c4 .r-desc { font-size: 26px; line-height: 36px; color: var(--sub); width: 732px; }
+
+/* 5장 신청하기 */
+.c5 .title { top: 120px; font-size: 72px; line-height: 82px; }
+.c5 .desc { position: absolute; left: 64px; top: 300px; width: 732px; font-size: 26px; line-height: 38px; color: var(--sub); }
+.c5 .ph { position: absolute; left: 0; top: 380px; width: 860px; height: 420px; }
+.c5 .cta { position: absolute; left: 64px; right: 64px; top: 818px; height: 92px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.c5 .btn { color: #fff; font-size: 30px; line-height: 40px; font-weight: 600; letter-spacing: -0.01em; text-align: center; white-space: nowrap; }
+.c5 .info { position: absolute; left: 64px; top: 928px; width: 732px; font-size: 20px; line-height: 30px; color: var(--sub); text-align: center; }
+
+/* 사진 칸 */
+.card .ph { background-color: #DADDE1; background-repeat: no-repeat; }
+.card.c3 .ph { background-color: #D3D7DC; }
+.card .ph-hint { display: none; }
+.card .ph.empty .ph-hint {
+  display: flex; position: absolute; inset: 0; align-items: center; justify-content: center;
+  font-size: 22px; color: #6B7078; letter-spacing: .02em;
+}
+.card .aitag {
+  position: absolute; right: 14px; bottom: 12px; padding: 4px 10px;
+  font-size: 15px; line-height: 20px; color: #fff; background: rgba(20,21,23,.55); border-radius: 3px; white-space: nowrap;
+}
+
+/* 내려받는 그림에는 빈 사진 칸 안내를 넣지 않는다 */
+.exporting .ph.empty .ph-hint { display: none; }
