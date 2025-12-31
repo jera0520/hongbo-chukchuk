@@ -1,4 +1,5 @@
-// 홍보 척척 — 화면 흐름: ① 정보 → ② 질문지 → ③ 붙여 넣기 → ④ 사진 → ⑤ 내려받기 (기획서 2판 4절)
+// 홍보 척척 — 화면 흐름: Ⅰ 알릴 것 → Ⅱ ChatGPT로 글 받기(질문지 복사·붙여 넣기) → Ⅲ 사진 → Ⅳ 받기
+// 한 번에 한 단계만 보인다. 탭으로 아무 단계나 오갈 수 있다.
 import { FIELDS, SLOTS, fieldNames } from './fields.js';
 import { buildPrompt } from './prompt.js';
 import { parseAnswer } from './parse.js';
@@ -11,6 +12,7 @@ const $ = (s) => document.querySelector(s);
 const NAMES = fieldNames();
 const TEXT_KEYS = Object.keys(NAMES);
 const STORE = 'hongbo-chukchuk.v1';
+const STEP_STORE = 'hongbo-chukchuk.step';
 const FORM_IDS = ['what', 'who', 'when', 'whom', 'must'];
 
 // 칸마다 [줄 수, 줄당 글자 수] — 넘쳤을 때 "몇 자 줄이기"를 알려 주는 데 쓴다
@@ -63,7 +65,9 @@ function previewScale() {
 function renderPreview() {
   preview.innerHTML = renderCards(state.data, state.photos, { accent: state.accent, editable: true });
   preview.querySelector('.cards').style.setProperty('--pz', previewScale());
-  $('#sample-badge').hidden = !state.isSample;
+  $('.preview-col').classList.toggle('sample', state.isSample);
+  $('#pv-title').textContent = state.isSample ? '예시 — 이렇게 5장이 만들어져요' : '내 홍보 이미지 5장';
+  $('#pv-sub').textContent = state.isSample ? '가상의 「소소공방」 예시예요. Ⅱ에서 ChatGPT 답을 넣으면 내 글로 바뀝니다.' : '글자를 눌러 바로 고칠 수 있어요. 사진은 끌어서 위치를 옮겨요.';
   bindPreview();
   checkOverflow();
 }
@@ -105,13 +109,59 @@ function bindPreview() {
   });
 }
 
-// ---------- ① 정보 ----------
+// ---------- 단계 이동 ----------
+let step = 1;
+function go(n, animate = true) {
+  const dir = n < step ? 'back' : 'fwd';
+  step = n;
+  document.querySelectorAll('section[data-step]').forEach((sec) => {
+    const on = Number(sec.dataset.step) === n;
+    sec.hidden = !on;
+    if (on && animate) { sec.removeAttribute('data-dir'); void sec.offsetWidth; sec.dataset.dir = dir; }
+  });
+  document.querySelectorAll('#tabs li').forEach((li) => {
+    const k = Number(li.dataset.go);
+    li.classList.toggle('now', k === n);
+    li.classList.toggle('done', k !== n && stepDone(k));
+    const b = li.querySelector('button');
+    if (k === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+  });
+  try { localStorage.setItem(STEP_STORE, String(n)); } catch { /* 저장 못 하는 창 */ }
+  if (n === 2) markPaste();
+  if (n === 4) renderWarns();
+  if (animate) {
+    // 탭 줄은 위에 붙어 있어서 늘 0 → 탭 줄을 담은 두 단 전체의 위치로 잰다
+    const top = $('.layout').getBoundingClientRect().top;
+    if (top < 0) window.scrollTo({ top: window.scrollY + top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+}
+function stepDone(k) {
+  if (k === 1) return !!(state.form.what || '').trim();
+  if (k === 2) return !state.isSample && TEXT_KEYS.some((k2) => (state.data[k2] || '').trim());
+  if (k === 3) return SLOTS.some((s) => state.photos[s.n] && !state.photos[s.n].sample);
+  return false;
+}
+$('#tabs').addEventListener('click', (e) => {
+  const li = e.target.closest('li[data-go]');
+  if (li) go(Number(li.dataset.go));
+});
+$('#to2').addEventListener('click', () => go(2));
+$('#to3').addEventListener('click', () => go(3));
+$('#to4').addEventListener('click', () => go(4));
+
+// ---------- Ⅰ 알릴 것 ----------
+function syncTo2() {
+  const ok = !!(state.form.what || '').trim();
+  $('#to2').disabled = !ok;
+  say('#m-s1', ok ? '' : '「알리는 것」을 적으면 눌러져요.', '');
+}
 function bindForm() {
   for (const id of FORM_IDS) {
     const el = $('#f-' + id);
     el.value = state.form[id] || '';
-    el.addEventListener('input', () => { state.form[id] = el.value; save(); renderPrompt(); });
+    el.addEventListener('input', () => { state.form[id] = el.value; save(); renderPrompt(); syncTo2(); if (state.isSample) clearSampleAnswer(); });
   }
+  syncTo2();
   const box = $('#accents');
   box.innerHTML = ACCENTS.map((a) =>
     `<button type="button" class="swatch" role="radio" data-color="${a.color}" aria-checked="${a.color === state.accent}"><i style="background:${a.color}"></i>${a.name}</button>`).join('');
@@ -128,12 +178,14 @@ function bindForm() {
 $('#b-sample').addEventListener('click', async () => {
   Object.assign(state.form, SAMPLE_FORM);
   FORM_IDS.forEach((id) => { $('#f-' + id).value = state.form[id] || ''; });
+  syncTo2();
+  renderPrompt();
   $('#answer').value = SAMPLE_ANSWER;
-  showCheck();
-  applyAnswer({ sample: true });
+  pasteAt = 4;
+  showCheck({ sample: true });
+  go(2);
   await loadSamplePhotos();
-  say('#m-answer', '예시 답을 붙여 넣고 틀에 넣었어요. 미리보기에서 글자를 눌러 고쳐 보세요.', 'ok');
-  $('#s3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  say('#m-answer', '예시 답을 넣어 봤어요. 오른쪽 미리보기의 글자를 눌러 고쳐 볼 수 있어요. 내 것을 만들 땐 Ⅰ로 돌아가 내 내용을 적으세요.', 'ok');
 });
 
 let resetArmed = 0;
@@ -148,11 +200,15 @@ $('#b-reset').addEventListener('click', (e) => {
   state.form = {}; state.data = {}; state.prompts = {}; state.photos = {}; state.aiCopied = {}; state.isSample = false;
   FORM_IDS.forEach((id) => { $('#f-' + id).value = ''; });
   $('#answer').value = '';
-  $('#check').hidden = true;
-  save(); renderPrompt(); renderSlots(); renderPreview();
+  $('#got').hidden = true;
+  pasteAt = 1;
+  say('#m-answer', '', ''); say('#m-prompt', '', '');
+  $('#to3').disabled = true;
+  save(); renderPrompt(); renderSlots(); renderPreview(); syncTo2();
+  go(1);
 });
 
-// ---------- ② 질문지 ----------
+// ---------- Ⅱ 질문지 ----------
 function currentPrompt() {
   const own = SLOTS.filter((s) => state.photos[s.n] && !state.photos[s.n].sample).map((s) => s.n);
   return buildPrompt(state.form, own);
@@ -161,46 +217,72 @@ function renderPrompt() {
   $('#prompt-text').textContent = currentPrompt();
   const ok = (state.form.what || '').trim();
   $('#b-copy-prompt').disabled = !ok;
-  if (!ok) say('#m-prompt', '① 「알리는 것」을 먼저 적어 주세요.', '');
-  else if ($('#m-prompt').textContent.startsWith('①')) say('#m-prompt', '', '');
+  if (!ok) say('#m-prompt', 'Ⅰ에서 「알리는 것」을 먼저 적어 주세요.', 'bad');
+  else if ($('#m-prompt').textContent.startsWith('Ⅰ')) say('#m-prompt', '', '');
+}
+// 예시를 본 뒤 내 것을 만들기 시작하면 예시 답을 비운다(붙여 넣을 때 섞이지 않게)
+function clearSampleAnswer() {
+  if (!$('#answer').value) return;
+  $('#answer').value = '';
+  $('#got').hidden = true;
+  $('#to3').disabled = true;
+  say('#m-answer', '', '');
+  pasteAt = 1; markPaste();
 }
 $('#b-copy-prompt').addEventListener('click', async () => {
+  if (state.isSample) clearSampleAnswer();
   const ok = await copyText(currentPrompt());
-  say('#m-prompt', ok ? '복사했어요. ChatGPT 입력창에 붙여 넣고 보내세요.' : '복사가 막혔어요. 아래 「질문지 내용 보기」를 열어 직접 복사해 주세요.', ok ? 'ok' : 'bad');
+  say('#m-prompt', ok ? '복사했어요.' : '복사가 막혔어요. 「질문지 내용 보기」를 열어 직접 복사해 주세요.', ok ? 'ok' : 'bad');
+  if (ok && pasteAt < 2) { pasteAt = 2; markPaste(); }
 });
 
-// ---------- ③ 붙여 넣기 ----------
+// 3칸 중 지금 할 칸을 표시한다(1 질문지 복사 → 2 ChatGPT에 보내기 → 3 답 붙여 넣기, 4는 다 됨)
+let pasteAt = 1;
+function markPaste() {
+  document.querySelectorAll('#psteps > li').forEach((li) => {
+    const k = Number(li.dataset.ps);
+    li.classList.toggle('now', k === pasteAt);
+    li.classList.toggle('done', k < pasteAt);
+  });
+}
+$('#open-gpt').addEventListener('click', () => { if (pasteAt <= 2) { pasteAt = 3; markPaste(); } });
+// ChatGPT 탭에 다녀오면 붙여 넣을 칸을 가리킨다
+window.addEventListener('focus', () => {
+  if (step === 2 && pasteAt === 2) { pasteAt = 3; markPaste(); }
+});
+
+// ---------- Ⅱ 붙여 넣기 ----------
 let parsed = {};
 let parseTimer = 0;
 $('#answer').addEventListener('input', () => { clearTimeout(parseTimer); parseTimer = setTimeout(showCheck, 250); });
 
-function showCheck() {
+// 붙여 넣으면 바로 읽어서 틀에 넣는다(넣기 단추 없음)
+function showCheck({ sample = false } = {}) {
   parsed = parseAnswer($('#answer').value);
   const got = TEXT_KEYS.filter((k) => parsed[k]);
-  const box = $('#check');
+  const box = $('#got');
   if (!$('#answer').value.trim()) { box.hidden = true; say('#m-answer', '', ''); return; }
   box.hidden = false;
   if (!got.length) {
-    $('#check-sum').textContent = '읽은 칸이 없어요.';
+    box.classList.add('bad');
+    $('#got-sum').textContent = '읽은 칸이 없어요.';
     $('#check-body').innerHTML = '';
-    $('#b-apply').disabled = true;
-    say('#m-answer', 'ChatGPT 답의 회색 상자 안 내용을 복사했는지 봐 주세요. 「1장 큰제목:」 같은 이름표가 있어야 읽을 수 있어요.', 'bad');
+    say('#m-answer', 'ChatGPT 답의 회색 상자 오른쪽 위 복사 단추로 복사했는지 봐 주세요. 「1장 큰제목:」 같은 이름표가 있어야 읽을 수 있어요.', 'bad');
     return;
   }
-  $('#b-apply').disabled = false;
+  box.classList.remove('bad');
   const photoN = SLOTS.filter((s) => parsed['p' + s.n]).length;
-  $('#check-sum').textContent = `${TEXT_KEYS.length}칸 중 ${got.length}칸을 읽었어요` + (photoN ? ` · 사진 프롬프트 ${photoN}개` : '');
+  const missing = TEXT_KEYS.length - got.length;
+  $('#got-sum').textContent = `틀에 넣었어요 · ${TEXT_KEYS.length}칸 중 ${got.length}칸` + (photoN ? ` · 사진 프롬프트 ${photoN}개` : '') + (missing ? ` · 빈 칸 ${missing}개는 미리보기에서 직접 쓰면 돼요` : '');
   $('#check-body').innerHTML = TEXT_KEYS.map((k) => {
     const v = parsed[k];
-    return `<tr><th>${NAMES[k]}</th>${v ? `<td>${escapeHtml(v)}</td>` : '<td class="empty">비어 있음 — 틀에 넣은 뒤 미리보기에서 직접 쓸 수 있어요</td>'}</tr>`;
+    return `<tr><th>${NAMES[k]}</th>${v ? `<td>${escapeHtml(v)}</td>` : '<td class="empty">비어 있음</td>'}</tr>`;
   }).join('');
-  say('#m-answer', '', '');
+  applyAnswer({ sample });
+  pasteAt = 4; markPaste();
+  $('#to3').disabled = false;
+  if (!sample) say('#m-answer', '오른쪽 미리보기에서 글자를 눌러 고칠 수 있어요.', 'ok');
 }
-
-$('#b-apply').addEventListener('click', () => {
-  applyAnswer({ sample: false });
-  say('#m-answer', '틀에 넣었어요. 이제 ④에서 사진을 넣으세요.', 'ok');
-});
 
 function applyAnswer({ sample }) {
   const p = parseAnswer($('#answer').value);
@@ -214,9 +296,10 @@ function applyAnswer({ sample }) {
   }
   state.isSample = sample;
   save(); renderSlots(); renderPreview(); renderPrompt();
+  go(step, false);
 }
 
-// ---------- ④ 사진 ----------
+// ---------- Ⅲ 사진 ----------
 function renderSlots() {
   $('#slots').innerHTML = SLOTS.map((s) => {
     const p = state.photos[s.n];
@@ -227,7 +310,7 @@ function renderSlots() {
         <p class="slot-name">${s.label} <small>${s.what} · ${s.w}×${s.h}</small></p>
         <div class="row-btns">
           <button type="button" class="btn ghost small" data-act="pick">사진 고르기</button>
-          <button type="button" class="btn ghost small" data-act="prompt" ${state.prompts[s.n] ? '' : 'disabled title="③에서 답을 넣으면 생겨요"'}>AI 프롬프트 복사</button>
+          <button type="button" class="btn ghost small" data-act="prompt" ${state.prompts[s.n] ? '' : 'disabled title="Ⅱ에서 답을 넣으면 생겨요"'}>AI 프롬프트 복사</button>
           ${p ? '<button type="button" class="btn quiet small" data-act="remove">빼기</button>' : ''}
         </div>
         ${p ? `<div class="slot-tools">
@@ -312,7 +395,7 @@ async function loadSamplePhotos() {
   renderSlots(); renderPreview();
 }
 
-// ---------- ⑤ 내려받기 ----------
+// ---------- Ⅳ 받기 ----------
 function renderWarns() {
   const w = [];
   const over = state.overflows || [];
@@ -385,6 +468,7 @@ async function copyText(text) {
 }
 
 // ---------- 시작 ----------
+if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) document.querySelectorAll('.k-mod').forEach((k) => { k.textContent = '⌘'; });
 async function start() {
   const saved = load();
   if (saved && !saved.isSample) {
@@ -400,6 +484,10 @@ async function start() {
   renderPrompt();
   renderSlots();
   renderPreview();
+  if (stepDone(2)) { pasteAt = 4; $('#to3').disabled = false; }
+  let first = 1;
+  try { first = Number(localStorage.getItem(STEP_STORE)) || 1; } catch { /* 저장 못 하는 창 */ }
+  go(state.isSample ? 1 : Math.min(4, Math.max(1, first)), false);
   if (state.isSample) await loadSamplePhotos();
   window.addEventListener('resize', () => preview.querySelector('.cards')?.style.setProperty('--pz', previewScale()));
 }
