@@ -61,13 +61,19 @@ export function parseAnswer(text) {
   const json = fromJson(text);
   if (json) return json;
 
-  const out = {};
+  // 실제 ChatGPT 웹 답은 "/" 뒤에서 진짜로 줄을 바꿔 보낸다(2026-10-16 확인).
+  // 그래서 "/"로 끝난 칸 다음의 이름표 없는 줄은 그 칸에 이어 붙인다.
+  const raw = [];
+  let last = null;
   for (const line of text.split(/\r?\n/)) {
     const m = line.match(/^(.{2,20}?)\s*[:：]\s*(.*)$/);
-    if (!m) continue;
-    const f = LABELS.get(norm(m[1]));
-    if (!f) continue;
-    put(out, f, m[2]);
+    const f = m && LABELS.get(norm(m[1]));
+    if (f) { last = { f, v: m[2] }; raw.push(last); continue; }
+    const t = line.trim();
+    if (last && t && !t.startsWith('```') && /\/\s*$/.test(last.v)) last.v = last.v.replace(/\s*$/, '') + t;
+    else last = null;
   }
+  const out = {};
+  for (const { f, v } of raw) put(out, f, v);
   return out;
 }
