@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="css/cards.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="howto.css">
 </head>
 <body>
 <header class="masthead">
@@ -19,7 +20,7 @@
     <h1>홍보 척척</h1>
     <p class="lede">행사·체험·가게 홍보 이미지 5장, <em>쓰고 계신 ChatGPT</em>가 글을 써 줍니다</p>
     <p class="promise">무료 · 가입 없음 · 글과 사진은 이 컴퓨터 밖으로 나가지 않아요</p>
-    
+    <button type="button" class="howto-open" id="howto-open" aria-haspopup="dialog" hidden><span class="howto-thumb" aria-hidden="true"><video class="howto-peek" poster="howto_thumb.jpg" muted loop playsinline preload="none" tabindex="-1" width="144" height="256"></video><svg class="howto-play" viewBox="0 0 28 28" focusable="false"><circle cx="14" cy="14" r="13"/><path d="M11.4 8.8v10.4l8.2-5.2z"/></svg></span><span class="howto-t">사용법 영상 보기</span></button>
   </div>
   <p class="phone-note">이 도구는 컴퓨터 화면에 맞춰 만들었어요. 휴대폰에서는 미리보기만 보시고, 만들기는 컴퓨터에서 해 주세요.</p>
 </header>
@@ -146,6 +147,13 @@
   <p>AI한술</p>
 </footer>
 
+<dialog class="howto-dlg" id="howto-dlg" aria-label="홍보 척척 사용법 영상">
+  <div class="howto-box">
+    <button type="button" class="howto-x">닫기</button>
+    <video src="howto.mp4" poster="howto_poster.jpg" preload="none" controls playsinline width="720" height="1280"></video>
+  </div>
+</dialog>
 <script type="module" src="js/main.js"></script>
+<script src="howto.js" defer></script>
 </body>
 </html>
